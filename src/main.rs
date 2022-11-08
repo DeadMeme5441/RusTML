@@ -10,12 +10,15 @@ fn main() {
 
     let file_path = &args[1];
 
-    let doc = Document::from(file_path.to_string());
+    let mut doc = Document::from(file_path.to_string());
+
+    doc.opening_tags = get_opening_tags(&doc);
+    doc.closing_tags = get_closing_tags(&doc);
 
     println!("{:?}", doc);
+    println!("");
 
-    get_opening_tags(&doc);
-    get_closing_tags(&doc);
+    tags_list(&doc);
 }
 
 fn get_opening_tags(doc: &Document) -> Vec<Tag> {
@@ -57,7 +60,7 @@ fn get_opening_tags(doc: &Document) -> Vec<Tag> {
     println!("{:?}", opening_tags_obj_list);
     println!("{:?}", opening_tags_name_list);
 
-    document.opening_tags
+    opening_tags_obj_list
 }
 
 fn get_closing_tags(doc: &Document) -> Vec<Tag> {
@@ -100,7 +103,7 @@ fn get_closing_tags(doc: &Document) -> Vec<Tag> {
     println!("{:?}", closing_tags_obj_list);
     println!("{:?}", closing_tags_name_list);
 
-    document.closing_tags
+    closing_tags_obj_list
 }
 
 fn generate_tag_object(doc: &Document, tag: &String) -> Tag {
@@ -152,4 +155,35 @@ fn generate_tag_object(doc: &Document, tag: &String) -> Tag {
         name: tag_name,
         subtags: subtag_obj_list,
     }
+}
+
+fn tags_list(doc: &Document) {
+    let document = doc.clone();
+
+    let opening_tags_list: HashSet<String> = document
+        .opening_tags
+        .into_iter()
+        .map(|tags| tags.name)
+        .collect::<HashSet<_>>();
+
+    let closing_tags_list: HashSet<String> = document
+        .closing_tags
+        .into_iter()
+        .map(|tags| tags.name)
+        .collect::<HashSet<_>>();
+
+    println!("Opening Tags : {:?}", opening_tags_list);
+    println!("Closing Tags : {:?}", closing_tags_list);
+
+    let tags_names_list: HashSet<String> = (&opening_tags_list
+        .union(&closing_tags_list)
+        .collect::<HashSet<_>>())
+        .difference(
+            &opening_tags_list
+                .intersection(&closing_tags_list)
+                .collect::<HashSet<_>>(),
+        )
+        .collect::<HashSet<_>>();
+
+    println!("{:?}", &tags_names_list);
 }
