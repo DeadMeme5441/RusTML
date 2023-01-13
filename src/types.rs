@@ -39,6 +39,15 @@ impl From<&String> for Tag {
     }
 }
 
+impl Tag {
+    pub fn update(name: &String, subtags: Vec<SubTag>) -> Self {
+        Tag {
+            name: name.to_string(),
+            subtags,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Document {
     pub file_name: String,
