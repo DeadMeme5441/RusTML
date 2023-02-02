@@ -1,5 +1,7 @@
 use std::fs;
 
+use crate::tag_errors;
+
 #[derive(Debug, Clone)]
 pub struct SubTag {
     pub name: String,
@@ -56,6 +58,7 @@ pub struct Document {
     pub tags: Vec<Tag>,
     pub opening_tags: Vec<Tag>,
     pub closing_tags: Vec<Tag>,
+    pub errors: Errors,
 }
 
 impl From<String> for Document {
@@ -67,13 +70,31 @@ impl From<String> for Document {
             tags: vec![],
             opening_tags: vec![],
             closing_tags: vec![],
+            errors: Errors {
+                tag_errors: vec![],
+                subtag_errors: vec![],
+            },
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Errors {
-    tag_errors: Vec<Tag>,
-    subtag_errors: Vec<SubTag>,
-    value: bool,
+    pub tag_errors: Vec<Tag>,
+    pub subtag_errors: Vec<Tag>,
 }
+
+// impl Errors {
+//     pub fn update_tag_errors(tag_errors: Vec<Tag>) -> Self {
+//         Errors {
+//             tag_errors,
+//             subtag_errors: Vec::new(),
+//         }
+//     }
+//     pub fn update_subtag_errors(subtag_errors: Vec<Tag>) -> Self {
+//         Errors {
+//             tag_errors: tag_errors,
+//             subtag_errors,
+//         }
+//     }
+// }

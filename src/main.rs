@@ -1,6 +1,6 @@
 mod types;
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Error, Regex};
 use std::collections::HashSet;
 use std::env;
 use types::{Document, SubTag, Tag};
@@ -16,9 +16,9 @@ fn main() {
     doc.opening_tags = get_opening_tags(&doc);
     doc.closing_tags = get_closing_tags(&doc);
 
-    // println!("");
-
     tags_list(&mut doc);
+    tag_errors(&mut doc);
+    subtag_errors(&mut doc);
 
     println!("{:?}", doc);
     // println!("{:?}", doc.opening_tags);
@@ -142,7 +142,7 @@ fn generate_tag_object(doc: &Document, tag: &String) -> Tag {
 
     // Checks if tag is opening or closing
     if !tag_name.contains("/") {
-        location += tag_name.len();
+        location += tag.len();
 
         // If tag is opening, sets subtag ending as -1.
         for sub_item in subtag_list {
@@ -201,26 +201,14 @@ fn tags_list(doc: &mut Document) {
         .map(|tags| tags.name)
         .collect::<HashSet<_>>();
 
-    // println!("Opening Tags : {:?}", opening_tags_list);
-    // println!("Closing Tags : {:?}", closing_tags_list);
-
     // Gets tag names in both sets as an union.
-    let tag_names_list: HashSet<_> = opening_tags_list
+    let all_tags_list: HashSet<_> = opening_tags_list
         .union(&closing_tags_list)
-        .collect::<HashSet<_>>();
-
-    // Gets tag names in one set but not both sets
-    // Basically opened but not closed, and closed but not opened.
-    let tag_error_list: HashSet<_> = opening_tags_list
-        .symmetric_difference(&closing_tags_list)
         .collect::<HashSet<_>>();
 
     let mut final_tags: Vec<Tag> = Vec::new();
 
-    // println!("{:?}", &tag_names_list);
-    // println!("{:?}", &tag_error_list);
-
-    for name in tag_names_list {
+    for name in all_tags_list {
         let opening_subtags_list: Vec<SubTag> = document
             .opening_tags
             .iter()
@@ -271,5 +259,81 @@ fn update_subtags_location(
             }
         }
     }
+
+    for subtag_start_item in opening_subtags_list.clone() {
+        if final_subtags_list.contains(&subtag_start_item) == false {
+            final_subtags_list.push(subtag_start_item);
+        }
+    }
+    for subtag_end_item in closing_subtags_list.clone() {
+        if final_subtags_list.contains(&subtag_end_item) == false {
+            final_subtags_list.push(subtag_end_item);
+        }
+    }
+
     final_subtags_list
+}
+
+fn tag_errors(doc: &mut Document) -> Vec<String> {
+    let document = doc.clone();
+
+    let opening_tags_list: HashSet<String> = document
+        .opening_tags
+        .iter()
+        .cloned()
+        .map(|tags| tags.name)
+        .collect::<HashSet<String>>();
+
+    let closing_tags_list: HashSet<String> = document
+        .closing_tags
+        .iter()
+        .cloned()
+        .map(|tags| tags.name)
+        .collect::<HashSet<String>>();
+
+    // Gets tag names in one set but not both sets
+    // Basically opened but not closed, and closed but not opened.
+    let tag_error_list: Vec<String> = opening_tags_list
+        .symmetric_difference(&closing_tags_list)
+        .into_iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>();
+
+    // println!("{:?}", tag_error_list);
+
+    doc.errors.tag_errors = doc
+        .clone()
+        .tags
+        .into_iter()
+        .filter(|tag| tag_error_list.contains(&tag.name))
+        .collect::<Vec<Tag>>();
+
+    tag_error_list
+}
+
+fn subtag_errors(doc: &mut Document) -> Vec<Tag> {
+    let document = doc.clone();
+
+    // println!("{:?}", document.tags);
+
+    let mut subtag_error_list: Vec<Tag> = Vec::new();
+
+    for tag in document.tags.iter() {
+        let mut errors: Vec<SubTag> = Vec::new();
+        for subtag in tag.subtags.iter() {
+            if subtag.start == -1 {
+                errors.push(subtag.clone());
+                // println!("{:?} -> Closed but not opened", subtag);
+            }
+            if subtag.end == -1 {
+                errors.push(subtag.clone());
+                // println!("{:?} -> Opened but not closed", subtag);
+            }
+        }
+        subtag_error_list.push(Tag::update(&tag.name, errors));
+    }
+
+    doc.errors.subtag_errors = subtag_error_list.clone();
+
+    subtag_error_list
 }
