@@ -1,4 +1,4 @@
-<tagOne;subtag_name1=value1;subtag_error1=kek1>
+<tagOne;subtag_name1=value1;>
 Lorem Ipsum dolor sit amet.
-Lorem Ipsum dolor sit amet KEKW.
-</tagOne;subtag_name1=value1;subtag_error2=kek2>
+Lorem Ipsum dolor sit amet.
+</tagOne;subtag_name1=value1;>

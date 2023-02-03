@@ -1,7 +1,5 @@
 use std::fs;
 
-use crate::tag_errors;
-
 #[derive(Debug, Clone)]
 pub struct SubTag {
     pub name: String,
@@ -55,6 +53,7 @@ pub struct Document {
     pub file_name: String,
     pub file_path: String,
     pub contents: String,
+    pub text: String,
     pub tags: Vec<Tag>,
     pub opening_tags: Vec<Tag>,
     pub closing_tags: Vec<Tag>,
@@ -67,6 +66,7 @@ impl From<String> for Document {
             file_name: path.split("/").last().unwrap().to_string(),
             file_path: path.clone(),
             contents: fs::read_to_string(path).expect("Should have been able to read the file."),
+            text: String::new(),
             tags: vec![],
             opening_tags: vec![],
             closing_tags: vec![],
@@ -84,17 +84,9 @@ pub struct Errors {
     pub subtag_errors: Vec<Tag>,
 }
 
-// impl Errors {
-//     pub fn update_tag_errors(tag_errors: Vec<Tag>) -> Self {
-//         Errors {
-//             tag_errors,
-//             subtag_errors: Vec::new(),
-//         }
-//     }
-//     pub fn update_subtag_errors(subtag_errors: Vec<Tag>) -> Self {
-//         Errors {
-//             tag_errors: tag_errors,
-//             subtag_errors,
-//         }
-//     }
-// }
+#[derive(Debug, Clone)]
+pub struct Search {
+    pub text: Vec<(usize, String)>,
+    pub tag: Vec<Tag>,
+    pub subtag: Vec<Tag>,
+}

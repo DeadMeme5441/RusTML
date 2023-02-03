@@ -1,11 +1,16 @@
+#![feature(drain_filter)]
 mod types;
 use lazy_static::lazy_static;
 use regex::{Error, Regex};
 use std::collections::HashSet;
 use std::env;
-use types::{Document, SubTag, Tag};
+use types::{Document, Search, SubTag, Tag};
 
 fn main() {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(<.*?>)").unwrap();
+    }
+
     let args: Vec<String> = env::args().collect();
 
     let file_path = &args[1];
@@ -13,16 +18,22 @@ fn main() {
     // loads document
     let mut doc = Document::from(file_path.to_string());
 
+    doc.text = RE.replace_all(&doc.contents, "").to_string();
+    doc.text = doc.text.replace("\n", "");
+
     doc.opening_tags = get_opening_tags(&doc);
     doc.closing_tags = get_closing_tags(&doc);
 
     tags_list(&mut doc);
-    tag_errors(&mut doc);
-    subtag_errors(&mut doc);
+    generate_errors(&mut doc);
 
     println!("{:?}", doc);
     // println!("{:?}", doc.opening_tags);
     // println!("{:?}", doc.closing_tags);
+    // println!("{:?}", search_text(&doc, "Lorem".to_string()));
+    // println!("{:?}", search_tag(&doc, "tagOne".to_string()));
+    // println!("{:?}", search_subtag(&doc, "subtag".to_string()));
+    // println!("{:?}", search_document(&doc, "tag".to_string()));
 }
 
 fn get_opening_tags(doc: &Document) -> Vec<Tag> {
@@ -336,4 +347,56 @@ fn subtag_errors(doc: &mut Document) -> Vec<Tag> {
     doc.errors.subtag_errors = subtag_error_list.clone();
 
     subtag_error_list
+}
+
+fn generate_errors(doc: &mut Document) {
+    tag_errors(doc);
+    subtag_errors(doc);
+}
+
+fn search_text(doc: &Document, search_term: String) -> Vec<(usize, String)> {
+    let results: Vec<(usize, String)> = doc
+        .text
+        .match_indices(&search_term)
+        .map(|(pos, val)| (pos, val.to_string()))
+        .collect::<Vec<(usize, String)>>();
+    results
+}
+
+fn search_tag(doc: &Document, search_term: String) -> Vec<Tag> {
+    let results: Vec<Tag> = doc
+        .clone()
+        .tags
+        .drain_filter(|tag| tag.name.contains(&search_term) == true)
+        .collect::<Vec<Tag>>();
+
+    results
+}
+
+fn search_subtag(doc: &Document, search_term: String) -> Vec<Tag> {
+    let results = doc
+        .clone()
+        .tags
+        .into_iter()
+        .map(|tag| Tag {
+            name: tag.name,
+            subtags: tag
+                .subtags
+                .clone()
+                .drain_filter(|subtag| {
+                    subtag.name.contains(&search_term) || subtag.value.contains(&search_term)
+                })
+                .collect::<Vec<SubTag>>(),
+        })
+        .collect::<Vec<Tag>>();
+
+    results
+}
+
+fn search_document(doc: &Document, search_term: String) -> Search {
+    Search {
+        text: search_text(doc, search_term.clone()),
+        tag: search_tag(doc, search_term.clone()),
+        subtag: search_subtag(doc, search_term.clone()),
+    }
 }
